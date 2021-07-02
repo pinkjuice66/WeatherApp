@@ -6,17 +6,14 @@ import MapKit
 
 class CitySearchViewController: UIViewController {
     
-    let searchController = UISearchController(searchResultsController: nil)
+    let searchBar = UISearchBar()
     let resultsTableView = UITableView()
     let cityViewModel = CityViewModel()
     let weatherViewModel = WeatherViewModel.shared
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.delegate = self
-        searchController.delegate = self
-        searchController.searchResultsUpdater = self
+        searchBar.delegate = self
         resultsTableView.dataSource = self
         resultsTableView.delegate = self
         resultsTableView.register(SearchedCityCell.self,
@@ -29,7 +26,7 @@ class CitySearchViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        searchController.isActive = true
+        searchBar.becomeFirstResponder()
     }
 
 }
@@ -37,24 +34,29 @@ class CitySearchViewController: UIViewController {
 extension CitySearchViewController {
     
     func setUpUI() {
-        let searchBar = searchController.searchBar
-        
         view.backgroundColor = #colorLiteral(red: 0.2416438467, green: 0.2347165125, blue: 0.2377835956, alpha: 0.8600659014)
         resultsTableView.backgroundColor = #colorLiteral(red: 0.2416438467, green: 0.2347165125, blue: 0.2377835956, alpha: 0.8600659014)
         searchBar.searchTextField.backgroundColor = #colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)
         searchBar.barTintColor = #colorLiteral(red: 0.2549019754, green: 0.2745098174, blue: 0.3019607961, alpha: 1)
+        searchBar.setShowsCancelButton(true, animated: true)
         
         resultsTableView.translatesAutoresizingMaskIntoConstraints = false
         resultsTableView.separatorStyle = .none
-        resultsTableView.tableHeaderView = searchBar
+        
+        // set up constraints
+        view.addSubview(searchBar)
+        searchBar.translatesAutoresizingMaskIntoConstraints = false
+        searchBar.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor).isActive = true
+        searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
+        searchBar.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
+        searchBar.heightAnchor.constraint(equalToConstant: 60)
 
         view.addSubview(resultsTableView)
-//         set up constraints
-        resultsTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
+         
+        resultsTableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor).isActive = true
         resultsTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor).isActive = true
         resultsTableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor).isActive = true
         resultsTableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
-       
     }
     
 }
@@ -104,36 +106,23 @@ extension CitySearchViewController: UITableViewDelegate {
     
 }
 
-
-extension CitySearchViewController: UISearchResultsUpdating {
-    
-    func updateSearchResults(for searchController: UISearchController) {
-        // view model에게 검색을 하도록 요청. 검색 결과는 MKLocalSearchCompleterDelegate protocol을 구현하여 처리
-        if let term = searchController.searchBar.text {
-            if term == "" {
-                cityViewModel.searchedCities = []
-                resultsTableView.reloadData()
-            }
-            cityViewModel.cityList(of: term)
-        }
-    }
-    
-}
-
-extension CitySearchViewController: UISearchControllerDelegate {
-    
-    func didPresentSearchController(_ searchController: UISearchController) {
-        searchController.searchBar.becomeFirstResponder()
-    }
-    
-}
-
 extension CitySearchViewController: UISearchBarDelegate {
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.text = ""
         cityViewModel.searchedCities = []
         performSegue(withIdentifier: "unwindSegue", sender: nil)
+    }
+    
+    // view model에게 검색을 하도록 요청. 검색 결과는 MKLocalSearchCompleterDelegate protocol을 구현하여 처리
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if let term = searchBar.text {
+            if term == "" {
+                cityViewModel.searchedCities = []
+                resultsTableView.reloadData()
+            }
+            cityViewModel.cityList(of: term)
+        }
     }
     
 }

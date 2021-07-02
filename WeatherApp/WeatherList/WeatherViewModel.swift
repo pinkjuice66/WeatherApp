@@ -34,6 +34,9 @@ class WeatherViewModel {
         WeatherAPI.getWeatherInfo(cityName: cityName,
                                   latitude: latitude,
                                   longitude: longitude) { city in
+            if cities.contains(city) {
+                return 
+            }
             store(city)
             cities.append(city)
             completion()

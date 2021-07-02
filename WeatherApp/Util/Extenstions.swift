@@ -10,7 +10,7 @@ extension UILabel {
 
         let attributedText = NSMutableAttributedString(string: text)
         let strokeTextAttribute: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.blue
+            .foregroundColor: UIColor.white
         ]
 
         attributedText.addAttributes(strokeTextAttribute, range: range)
@@ -24,8 +24,20 @@ extension Date {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         formatter.timeZone = timeZone
+        var time = formatter.string(from: self)
         
-        return formatter.string(from: self)
+        let hour = Int(time.prefix(2))!
+
+        if hour < 12{
+            time = time + " AM"
+        } else if hour == 12 {
+            time = time + " PM"
+        } else if hour > 12 {
+            time = String(hour - 12) + ":" + time.suffix(2) + " PM"
+        }
+        if time.first! == "0" { time.removeFirst() }
+        
+        return time
     }
     
 }

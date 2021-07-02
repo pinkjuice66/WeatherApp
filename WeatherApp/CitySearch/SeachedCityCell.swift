@@ -16,9 +16,13 @@ class SearchedCityCell: UITableViewCell {
     }
 
     private func setUpUI() {
+        
+        backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0)
+        cityLabel.font = UIFont.preferredFont(forTextStyle: .title1)
+        cityLabel.adjustsFontForContentSizeCategory = true
         contentView.addSubview(cityLabel)
         
-        cityLabel.numberOfLines = 1
+        cityLabel.numberOfLines = 0
         cityLabel.font = UIFont.preferredFont(forTextStyle: .title1)
         cityLabel.adjustsFontForContentSizeCategory = true
         cityLabel.translatesAutoresizingMaskIntoConstraints = false
