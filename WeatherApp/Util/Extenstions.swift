@@ -1,7 +1,6 @@
 import UIKit
 
 extension UILabel {
-
     /**
      Highlight text in a label.
      */
@@ -13,10 +12,20 @@ extension UILabel {
         let strokeTextAttribute: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor.blue
         ]
-//        NSRange
 
         attributedText.addAttributes(strokeTextAttribute, range: range)
         self.attributedText = attributedText
     }
+}
 
+extension Date {
+    
+    func currentTime(timeZone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        formatter.timeZone = timeZone
+        
+        return formatter.string(from: self)
+    }
+    
 }

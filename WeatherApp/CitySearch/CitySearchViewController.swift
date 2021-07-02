@@ -9,11 +9,13 @@ class CitySearchViewController: UIViewController {
     let searchController = UISearchController(searchResultsController: nil)
     let resultsTableView = UITableView()
     let cityViewModel = CityViewModel()
+    let weatherViewModel = WeatherViewModel.shared
     
     override func viewDidLoad() {
         super.viewDidLoad()
         searchController.obscuresBackgroundDuringPresentation = false
         searchController.searchBar.delegate = self
+        searchController.delegate = self
         searchController.searchResultsUpdater = self
         resultsTableView.dataSource = self
         resultsTableView.delegate = self
@@ -22,6 +24,12 @@ class CitySearchViewController: UIViewController {
         cityViewModel.citySearch.searchCompleter.delegate = self
         
         setUpUI()
+        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        searchController.isActive = true
     }
 
 }
@@ -46,6 +54,7 @@ extension CitySearchViewController {
         resultsTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor).isActive = true
         resultsTableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor).isActive = true
         resultsTableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
+       
     }
     
 }
@@ -54,7 +63,8 @@ extension CitySearchViewController {
 // 지역에 관한 정보는 view modeld의 cities property가 가지고 있다.
 extension CitySearchViewController: UITableViewDataSource {
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -> Int {
         return cityViewModel.searchedCities.count
     }
     
@@ -76,8 +86,20 @@ extension CitySearchViewController: UITableViewDataSource {
 extension CitySearchViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
         let cityName = cityViewModel.searchedCities[indexPath.row].title
         
+        // 검색된 이름을 바탕으로 도시의 이름과, 위도, 경도 정보를 받아온다.
+        cityViewModel.citySearch.getCityLocationInfo(cityName) {
+            (name, latitude, longitude) in
+            self.weatherViewModel.addCity(cityName: name,
+                                          latitude: latitude, longitude: longitude) {
+                // 날씨 정보가 도착하면 Notification을 날려서 WeatherList의 table view를 업데이트
+                let notificationName = NSNotification.Name("weatherInfoArrived")
+                NotificationCenter.default.post(name: notificationName, object: nil)
+            }
+        }
+        self.performSegue(withIdentifier: "unwindSegue", sender: nil)
     }
     
 }
@@ -98,12 +120,20 @@ extension CitySearchViewController: UISearchResultsUpdating {
     
 }
 
+extension CitySearchViewController: UISearchControllerDelegate {
+    
+    func didPresentSearchController(_ searchController: UISearchController) {
+        searchController.searchBar.becomeFirstResponder()
+    }
+    
+}
+
 extension CitySearchViewController: UISearchBarDelegate {
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.text = ""
         cityViewModel.searchedCities = []
-        resultsTableView.reloadData()
+        performSegue(withIdentifier: "unwindSegue", sender: nil)
     }
     
 }
