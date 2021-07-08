@@ -12,6 +12,18 @@ struct City: Codable, Equatable, Comparable {
     var hourlyWeather: [DetailWeather]?
     var dailyWeather: [DetailWeather]?
     
+    private init() {
+        name = ""
+        latitude = ""
+        longitude = ""
+        createdDate = Date()
+        updatedDate = Date()
+        timeZone = nil
+        currentWeather = nil
+        hourlyWeather = nil
+        dailyWeather = nil
+    }
+    
     init(_ weatherService: WeatherService) {
         
         name = weatherService.name ?? ""
@@ -24,6 +36,8 @@ struct City: Codable, Equatable, Comparable {
         let weather = weatherService.current
         let current = DetailWeather(temperature: weather.temp,
                                     weather: weather.weather.first!,
+                                    todaysMinTemperature: weatherService.daily.first?.temp.min,
+                                    todaysMaxTemperature: weatherService.daily.first?.temp.max,
                                     sunrise: Date(timeIntervalSince1970: Double(weather.sunrise!)),
                                     sunset: Date(timeIntervalSince1970: Double(weather.sunset!)),
                                     humidity: weather.humidity,
@@ -31,26 +45,32 @@ struct City: Codable, Equatable, Comparable {
                                     feelsLike: weather.feels_like,
                                     pressure: weather.pressure,
                                     visibility: weather.visibility,
-                                    uvIndex: weather.uvi, chanceOfRain: nil)
+                                    uvIndex: weather.uvi,
+                                    chanceOfRain: weatherService.daily.first!.pop
+                                    )
         currentWeather = current
         
         var hourly = [DetailWeather]()
         for weather in weatherService.hourly {
+            guard hourly.count <= 26 else { break }
             let detail = DetailWeather(temperature: weather.temp,
                                        time: Date(timeIntervalSince1970: Double(weather.dt)),
                                        weather: weather.weather.first!,
                                        chanceOfRain: weather.pop)
             hourly.append(detail)
         }
+        hourly.removeFirst()
         hourlyWeather = hourly
         
         var daily = [DetailWeather]()
         for weather in weatherService.daily {
             let detail = DetailWeather(time: Date(timeIntervalSince1970:Double(weather.dt)),
                                        weather: weather.weather.first!,
-                                       todaysMinTemperature: weather.temp.min, todaysMaxTemperature: weather.temp.max, chanceOfRain: weather.pop)
+                                       todaysMinTemperature: weather.temp.min,
+                                       todaysMaxTemperature: weather.temp.max, chanceOfRain: weather.pop)
             daily.append(detail)
         }
+        daily.removeFirst()
         dailyWeather = daily
     }
     
@@ -67,13 +87,23 @@ struct City: Codable, Equatable, Comparable {
         let result = lhs.createdDate.compare(rhs.createdDate)
         return result == .orderedDescending
     }
+    
+    static func empty() -> City {
+        return City()
+    }
 }
 
 // 날씨 정보. 날씨와 설명, 아이콘을 가지고 있음
 struct Weather: Codable {
     let main: String
     let description: String
-    let icon: String
+    let iconName: String
+    
+    enum CodingKeys: String, CodingKey {
+        case main
+        case description
+        case iconName = "icon"
+    }
 }
 
 // 특정 시간대 혹은 특정 날짜에 대한 날씨 정보를 가지고 있는 모델

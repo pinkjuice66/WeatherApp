@@ -7,35 +7,64 @@ import UIKit
 class WeatherListViewController: UIViewController {
 
     let weatherViewModel = WeatherViewModel.shared
-    var timer :Timer?
+    var timeUpdateTimer :Timer?
+    var weatherUpdateTimer: Timer?
     
     @IBOutlet weak var citiesTableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationController?.setNavigationBarHidden(true, animated: false)
         citiesTableView.dataSource = self
         citiesTableView.delegate = self
-        
         setUpUI()
         addWeatherInfoArrivingObserver()
+        weatherViewModel.updateCheck(within: 0)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // 도시의 현재 시간을 업데이트 시키기 위해 15초 간격으로 타이머를 동작시킨다.
-        timer = Timer.scheduledTimer(timeInterval: 15,
+        timeUpdateTimer = Timer.scheduledTimer(timeInterval: 15,
                                      target: self,
                                      selector: #selector(updateCurrentTime),
                                      userInfo: nil,
                                      repeats: true)
+        weatherViewModel.updateCheck(within: 30)
+        // 도시의 기상 정보를 업데이트 시키기 위해 30분 간격으로 타이머를 동작시킨다.
+        weatherUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1800,
+                                                  repeats: true) { timer in
+            self.weatherViewModel.updateCheck()
+        }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateCurrentTime()
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        timer?.invalidate()
+        timeUpdateTimer?.invalidate()
     }
     
-    // 각 도시의 현재시간을 업데이트 시킨다
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        guard let destinationVC = segue.destination
+                as? DetailWeatherViewController else { return }
+        guard let index = sender as? IndexPath else { return }
+        
+        destinationVC.initialIndex = index.row
+    }
+    
+    deinit {
+        weatherUpdateTimer?.invalidate()
+    }
+    
+    // 각 도시의 현재시간을 나타내는 레이블을 업데이트 시킨다
     @objc func updateCurrentTime() {
         for i in 0..<weatherViewModel.getCities().count {
             let idx = IndexPath(row: i, section: 0)
@@ -46,13 +75,13 @@ class WeatherListViewController: UIViewController {
         }
     }
     
-    
     @objc func searchButtonClicked() {
         performSegue(withIdentifier: "searchButtonClickedSegue", sender: nil)
     }
     
     @IBAction func myUnwindAction(unwindSegue: UIStoryboardSegue) {
     }
+    
 }
 
 extension WeatherListViewController {
@@ -67,6 +96,7 @@ extension WeatherListViewController {
         
         let label = UILabel()
         label.textColor = .white
+        label.textAlignment = .center
         label.numberOfLines = 2
         label.text = """
             Weather
@@ -99,10 +129,12 @@ extension WeatherListViewController {
         let notificationName = NSNotification.Name("weatherInfoArrived")
         NotificationCenter.default.addObserver(forName: notificationName,
                                                object: nil,
-                                               queue: .main,
-                                               using: {_ in
-                                                self.citiesTableView.reloadData()
-                                               })
+                                               queue: .main) { _ in
+            self.citiesTableView.reloadData()
+            // WeatherPageItemViewController(날씨 상세 정보)에게 날씨 정보가 업데이트 되었다는 것을 알려서 뷰의 데이터를 업데이트 하도록 한다.
+            let notificationName = NSNotification.Name("weatherInfoUpdated")
+            NotificationCenter.default.post(name: notificationName, object: nil)
+        }
     }
     
 }
@@ -117,7 +149,7 @@ extension WeatherListViewController: UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "WeatherCell") as? WeatherCell else { return UITableViewCell() }
         let city = weatherViewModel.getCities()[indexPath.row]
         cell.currentTimeLabel.text = Date().currentTime(timeZone: city.timeZone!)
-        cell.currentTemperatureLabel.text = "\((city.currentWeather?.temperature?.rounded())!)℃"
+        cell.currentTemperatureLabel.text = (city.currentWeather?.temperature?.roundedString())! + "℃"
         cell.nameLabel.text = city.name
         
         return cell
@@ -126,6 +158,10 @@ extension WeatherListViewController: UITableViewDataSource {
 }
 
 extension WeatherListViewController: UITableViewDelegate {
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: "detailWeatherSegue", sender: indexPath)
+    }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         

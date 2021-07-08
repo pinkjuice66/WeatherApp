@@ -3,11 +3,11 @@
 import Foundation
 import MapKit
 
-class CitySearch: NSObject{
+class CitySearchManager: NSObject{
     
     let searchCompleter = MKLocalSearchCompleter()
     
-    // 입력된 검색어에 매치하는 지역들을 검색한다.
+    // 입력된 검색어에 매치하는 지역들을 검색해서 자동완성 리스트를 만든다.
     func cityList(of term: String) {
         self.searchCompleter.queryFragment = term
     }
@@ -23,14 +23,12 @@ class CitySearch: NSObject{
             guard let response = response else {
                 return
             }
-            
             for item in response.mapItems {
                 if let name = item.name, let location = item.placemark.location {
                     let coordinate = location.coordinate
                     completion(name, coordinate.latitude.description, coordinate.longitude.description)
                 }
             }
-            
         }
     }
     

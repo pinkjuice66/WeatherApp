@@ -1,6 +1,6 @@
 // 가지고 있어야 하는 정보 : 저장된 도시에 대한 날씨 정보
 
-import Foundation
+import UIKit
 
 class WeatherViewModel {
     
@@ -30,16 +30,16 @@ class WeatherViewModel {
     }
     
     func addCity(cityName: String, latitude: String,
-                 longitude: String, completion: () -> Void) {
+                 longitude: String) {
         WeatherAPI.getWeatherInfo(cityName: cityName,
                                   latitude: latitude,
                                   longitude: longitude) { city in
-            if cities.contains(city) {
-                return 
-            }
-            store(city)
-            cities.append(city)
-            completion()
+            if self.cities.contains(city) { return }
+            self.store(city)
+            self.cities.append(city)
+            // 날씨 정보가 도착하면 Notification을 날려서 WeatherList의 table view를 업데이트
+            let notificationName = NSNotification.Name("weatherInfoArrived")
+            NotificationCenter.default.post(name: notificationName, object: nil)
         }
     }
     
@@ -51,19 +51,28 @@ class WeatherViewModel {
         }
     }
     
-    // 유지하고 있는 도시목록 중에 유효시간(10분)이 지나서 업데이트해야 하는 도시가 있는지 검사
-    func updateCheck() {
-        
+    // 유지하고 있는 도시목록 중에 업데이트한 시간이 n분이 지난 경우 업데이트
+    func updateCheck(within n: Int = 30) {
+        let sec = Double(n) * 60
+        for city in getCities() {
+            let timeInterval = Date().timeIntervalSince1970 - city.updatedDate.timeIntervalSince1970
+            if timeInterval >= sec {
+                updateWeather(of: city)
+            }
+        }
     }
     
     // 도시의 기상 정보를 업데이트 시킨다.
     func updateWeather(of city: City) {
         WeatherAPI.getWeatherInfo(cityName: city.name,
-                                  latitude: city.latitude, longitude: city.longitude) {
-            city in
-            store(city)
-            guard let idx = cities.firstIndex(of: city) else { return }
-            cities[idx] = city
+                                  latitude: city.latitude, longitude: city.longitude)
+        { city in
+            self.store(city)
+            guard let idx = self.cities.firstIndex(of: city) else { return }
+            self.cities[idx] = city
+            let notificationName = NSNotification.Name("weatherInfoArrived")
+            NotificationCenter.default.post(name: notificationName,
+                                            object: nil)
         }
     }
     

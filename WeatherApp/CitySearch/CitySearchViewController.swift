@@ -1,6 +1,3 @@
-// 셀 만들기, 레이블 하이라이팅
-
-
 import UIKit
 import MapKit
 
@@ -18,7 +15,7 @@ class CitySearchViewController: UIViewController {
         resultsTableView.delegate = self
         resultsTableView.register(SearchedCityCell.self,
                                   forCellReuseIdentifier: SearchedCityCell.reuseIdentifier)
-        cityViewModel.citySearch.searchCompleter.delegate = self
+        cityViewModel.citySearchManager.searchCompleter.delegate = self
         
         setUpUI()
         
@@ -92,14 +89,10 @@ extension CitySearchViewController: UITableViewDelegate {
         let cityName = cityViewModel.searchedCities[indexPath.row].title
         
         // 검색된 이름을 바탕으로 도시의 이름과, 위도, 경도 정보를 받아온다.
-        cityViewModel.citySearch.getCityLocationInfo(cityName) {
+        cityViewModel.citySearchManager.getCityLocationInfo(cityName) {
             (name, latitude, longitude) in
             self.weatherViewModel.addCity(cityName: name,
-                                          latitude: latitude, longitude: longitude) {
-                // 날씨 정보가 도착하면 Notification을 날려서 WeatherList의 table view를 업데이트
-                let notificationName = NSNotification.Name("weatherInfoArrived")
-                NotificationCenter.default.post(name: notificationName, object: nil)
-            }
+                                          latitude: latitude, longitude: longitude)
         }
         self.performSegue(withIdentifier: "unwindSegue", sender: nil)
     }

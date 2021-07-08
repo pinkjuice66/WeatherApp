@@ -5,13 +5,13 @@ import MapKit
 
 class CityViewModel: NSObject {
     
-    let citySearch = CitySearch()
+    let citySearchManager = CitySearchManager()
     
     // 검색되어진 도시들의 목록
     var searchedCities = [MKLocalSearchCompletion]()
     
     func cityList(of term: String) {
-        citySearch.cityList(of: term)
+        citySearchManager.cityList(of: term)
     }
     
 }
