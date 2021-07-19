@@ -46,7 +46,6 @@ extension CitySearchViewController {
         searchBar.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor).isActive = true
         searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
         searchBar.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
-        searchBar.heightAnchor.constraint(equalToConstant: 60)
 
         view.addSubview(resultsTableView)
          
@@ -85,9 +84,7 @@ extension CitySearchViewController: UITableViewDataSource {
 extension CitySearchViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-
         let cityName = cityViewModel.searchedCities[indexPath.row].title
-        
         // 검색된 이름을 바탕으로 도시의 이름과, 위도, 경도 정보를 받아온다.
         cityViewModel.citySearchManager.getCityLocationInfo(cityName) {
             (name, latitude, longitude) in

@@ -47,10 +47,11 @@ enum Weekday: Int {
 }
 
 extension UILabel {
-    /**
-     Highlight text in a label.
-     */
+    //  레이블의 특정 범위를 하이라이팅 한다.
     func setTextHighlighted(range: NSRange) {
+        
+         
+         
         guard let text = self.text else { return }
 
         let attributedText = NSMutableAttributedString(string: text)

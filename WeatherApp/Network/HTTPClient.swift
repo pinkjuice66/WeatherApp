@@ -8,7 +8,6 @@ class HTTPClient {
     
     static func requset(with url: String, queryPameters: [String: String] = [:],
                             completion: @escaping (Data?) -> Void ) {
-       
         var urlComponets = URLComponents(string: url)
         
         for query in queryPameters {

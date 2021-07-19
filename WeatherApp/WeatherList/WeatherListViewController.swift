@@ -1,7 +1,3 @@
-// * 도시만 검색되게 할 수 있는방법은 없을까?
-
-// * 네트워크가 연결되어 있는지 확인하고, 연결되어 있지 않다면 Alert창 뛰우기. -> 연결되어 있지 않은 경우, 현재 정보가 제한시간(10분?) 이내에 갱신되어있다면, 그대로 보여주고, 아니면 보여주지 않는다. 또한 custom Notificatino을 보낸 후 1초에 한번씩 확인하면서 request를 통해 받아온다.
-
 import UIKit
 
 class WeatherListViewController: UIViewController {
@@ -9,8 +5,13 @@ class WeatherListViewController: UIViewController {
     let weatherViewModel = WeatherViewModel.shared
     var timeUpdateTimer :Timer?
     var weatherUpdateTimer: Timer?
+    var isAlertPresented: Bool = false
     
     @IBOutlet weak var citiesTableView: UITableView!
+    
+    deinit {
+        weatherUpdateTimer?.invalidate()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,7 +20,7 @@ class WeatherListViewController: UIViewController {
         citiesTableView.delegate = self
         setUpUI()
         addWeatherInfoArrivingObserver()
-        weatherViewModel.updateCheck(within: 0)
+        addNetworkIsntConnectedObserver()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -30,16 +31,12 @@ class WeatherListViewController: UIViewController {
                                      selector: #selector(updateCurrentTime),
                                      userInfo: nil,
                                      repeats: true)
-        weatherViewModel.updateCheck(within: 30)
-        // 도시의 기상 정보를 업데이트 시키기 위해 30분 간격으로 타이머를 동작시킨다.
+        // 도시의 기상 정보를 업데이트 시키기 위해 30분(1800초) 간격으로 타이머를 동작시킨다.
         weatherUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1800,
                                                   repeats: true) { timer in
             self.weatherViewModel.updateCheck()
         }
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
+        weatherViewModel.updateCheck(within: 30)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -58,10 +55,6 @@ class WeatherListViewController: UIViewController {
         guard let index = sender as? IndexPath else { return }
         
         destinationVC.initialIndex = index.row
-    }
-    
-    deinit {
-        weatherUpdateTimer?.invalidate()
     }
     
     // 각 도시의 현재시간을 나타내는 레이블을 업데이트 시킨다
@@ -137,6 +130,21 @@ extension WeatherListViewController {
         }
     }
     
+    // 네트워크에 연결되어 있지 않다는 알림을 받으면 알림창을 뛰운다.
+    private func addNetworkIsntConnectedObserver() {
+        let notificationName = NSNotification.Name("networkIsntConnected")
+        NotificationCenter.default.addObserver(forName: notificationName,
+                                               object: nil,
+                                               queue: .main) { notification in
+            guard let alert = notification.object as? UIAlertController else { return }
+            if self == self.navigationController?.topViewController! &&
+                alert.presentingViewController == nil {
+                    self.isAlertPresented = true
+                    self.present(alert, animated: true)
+            }
+        }
+    }
+    
 }
 
 extension WeatherListViewController: UITableViewDataSource {
@@ -181,6 +189,7 @@ extension WeatherListViewController: UITableViewDelegate {
 }
 
 class WeatherCell: UITableViewCell {
+    
     @IBOutlet weak var currentTimeLabel: UILabel!
     @IBOutlet weak var currentTemperatureLabel: UILabel!
     @IBOutlet weak var nameLabel: UILabel!
@@ -190,5 +199,4 @@ class WeatherCell: UITableViewCell {
         selectionStyle = .none
     }
 
-    
 }

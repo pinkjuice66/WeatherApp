@@ -1,5 +1,3 @@
-// 가지고 있어야 하는 정보 : 저장된 도시에 대한 날씨 정보
-
 import UIKit
 
 class WeatherViewModel {
@@ -7,13 +5,43 @@ class WeatherViewModel {
     static let shared = WeatherViewModel()
     
     private var cities: [City] = []
+    var isUpdateNeeded: Bool = false
+    
+    // 네트워크에 연결되어지지 않았을 경우 뛰우는 알림창
+    let alertController: UIAlertController = {
+        let defaultAction = UIAlertAction(title: "OK",
+                                style: .default) { (action) in
+            // Respond to user selection of the action.
+           }
+        let settingsAction = UIAlertAction(title: "Settings",
+                                style: .default) { (action) in
+            // Respond to user selection of the action.
+        }
+           
+        let alert = UIAlertController(title: "Cellular Data is Turned Off",
+                                      message: "Turn on cellular data or use WI-FI to access data",
+                                      preferredStyle: .alert)
+        alert.addAction(defaultAction)
+        alert.addAction(settingsAction)
+        return alert
+    }()
     
     init() {
         retrieveCities()
+        addNetworkConnectedObserver()
     }
     
+    // 네트워크가 다시 연결되었고 날씨 정보를 업데이트 해야하면 업데이트 한다.
+    private func addNetworkConnectedObserver() {
+        let notificationName = NSNotification.Name("networkConnected")
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(updateCheck),
+                                               name: notificationName, object: nil)
+    }
+    
+        
     // 디스크에 저장되어 있는 cities json 파일을 읽어와서 cities에 담는다.
-    func retrieveCities() {
+    private func retrieveCities() {
         let names = Storage.getCityNames()
         cities = []
     
@@ -52,27 +80,38 @@ class WeatherViewModel {
     }
     
     // 유지하고 있는 도시목록 중에 업데이트한 시간이 n분이 지난 경우 업데이트
-    func updateCheck(within n: Int = 30) {
-        let sec = Double(n) * 60
+    @objc func updateCheck(within n: Int = 30) {
+        let deadLine = Double(n) * 60
         for city in getCities() {
             let timeInterval = Date().timeIntervalSince1970 - city.updatedDate.timeIntervalSince1970
-            if timeInterval >= sec {
+            if timeInterval >= deadLine {
                 updateWeather(of: city)
             }
         }
     }
     
     // 도시의 기상 정보를 업데이트 시킨다.
-    func updateWeather(of city: City) {
+    private func updateWeather(of city: City) {
+        // 네트워크 연결이 되어있지 않은 경우 WeatherListViewController에서 경고창이 뜰 수 있도록 Notification을 보낸다.
+        guard NetworkConnectionMonitor.shared.isConnected() else {
+            isUpdateNeeded = true
+            let notificationName = NSNotification.Name(rawValue: "networkIsntConnected")
+            NotificationCenter.default.post(name: notificationName,
+                                                object: alertController)
+            return
+        }
+        
         WeatherAPI.getWeatherInfo(cityName: city.name,
                                   latitude: city.latitude, longitude: city.longitude)
         { city in
             self.store(city)
             guard let idx = self.cities.firstIndex(of: city) else { return }
-            self.cities[idx] = city
-            let notificationName = NSNotification.Name("weatherInfoArrived")
-            NotificationCenter.default.post(name: notificationName,
-                                            object: nil)
+            DispatchQueue.main.async {
+                self.cities[idx] = city
+                let notificationName = NSNotification.Name("weatherInfoArrived")
+                NotificationCenter.default.post(name: notificationName,
+                                                object: nil)
+            }
         }
     }
     

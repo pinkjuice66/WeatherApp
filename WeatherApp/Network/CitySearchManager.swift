@@ -1,4 +1,4 @@
-// , 도시의 위도와 경도 검색
+// 도시의 위도와 경도 검색
 
 import Foundation
 import MapKit

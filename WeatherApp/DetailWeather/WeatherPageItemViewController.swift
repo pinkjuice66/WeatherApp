@@ -190,12 +190,13 @@ extension WeatherPageItemViewController: UIScrollViewDelegate {
                 currentTemperatureViewHeight - scrollView.contentOffset.y
             
             let ratio = (currentTemperatureViewHeightConstraint.constant / currentTemperatureViewHeight)
-            // top에서 위로 더 스크롤하려는 경우, cityName의 top constraint가 15보다 커지는것을 방지
+            // cityNameView의 cityNameLabel이 currentTemperatureView의 높이가 올라가고 내려감에 따라 같이 올라가고 내려가도록 한다.
+            // ratio가 1이하 일때만 동작하도록 한 것은 currentTemperatureView가 접혀있지 않은 상태에서 위로 더 스크롤하려는 경우, cityName의 top constraint가 15보다 커지는것을 방지
             if ratio <= 1{
                 cityNameTopConstraint.constant = ratio * 15
             }
             
-//          현재 기온 및 요일, 최고 최저 온도 레이블 투명하게 설정 ---->
+            // 현재 기온 및 요일, 최고 최저 온도 레이블 투명하게 설정 ---->
             let alpha = currentTemperatureViewHeightConstraint.constant / currentTemperatureViewHeight
             currentTemperatureLabel.alpha = alpha
             todayDayLabel.alpha = alpha
